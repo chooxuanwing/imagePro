@@ -7,10 +7,28 @@
 //
 
 #include <iostream>
+#include <fstream>
+#include <string>
+#include <sstream>
 #include "puff.h"
+using namespace std;
 
-int main(int argc, const char * argv[]) {
-	// insert code here...
-	std::cout << "Hello, World!\n";
-	return 0;
+class file{			// initiate class to store sections of png
+public:
+	string fileName;
+	
+};
+
+class file file;
+
+void openSortFile(){
+	ifstream input(file.fileName);
+	
+}
+
+int main()
+{
+	cout << "Image Processing Software\n\nSpecify the name of the PNG file that you would like to process.\n>";
+	cin >> file.fileName;
+	openSortFile();
 }
