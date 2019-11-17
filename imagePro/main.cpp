@@ -8,6 +8,8 @@
 
 #include <iostream>
 #include <fstream>
+#include <cstdio>
+#include <cstring>
 #include <string>
 #include <sstream>
 #include "puff.h"
@@ -19,10 +21,29 @@ public:
 	
 };
 
+//struct pngFile{
+//	char *dest;
+//	long *destlen;
+//	char *source;
+//	long *sourcelen;
+//};
+
+//struct pngFile pngFile;
 class file file;
 
-void openSortFile(){
-	ifstream input(file.fileName);
+void openSortFile(){		// use fread to read chunks later
+	
+	char sign[8];
+	
+	FILE* bFile;
+	bFile = fopen("file.fileName", "rb");		// rb is read in binary
+	
+	if (bFile == NULL){
+		cout << "File not found"<< endl;
+		EXIT_FAILURE;			// Quits programme if file not found
+		}
+	
+	
 	
 }
 
@@ -32,3 +53,4 @@ int main()
 	cin >> file.fileName;
 	openSortFile();
 }
+
