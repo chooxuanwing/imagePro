@@ -27,12 +27,12 @@ class file file;
 
 void openSortFile(string fileName){
 	
+	
 	char sign[8];
 	string signature,temp;
-	uint32_t magic =0;
+//	uint32_t magic =0;
 	
 	ifstream fopen(fileName, std::ios::binary);		// rb is read in binary(hex)
-	int a;
 	
 	if (fopen.fail()){
 		cout << "File not found"<< endl;
