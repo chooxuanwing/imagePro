@@ -22,7 +22,7 @@ public:
 	vector <unsigned char> rawCode;
 //	vector <unsigned int> rawDec;
 	string fileName;
-	int IHDRloc,IHDRlen;
+	int IHDRloc,IHDRlen, IENDloc, IENDlen;
 	int width, height, bitdepth,colortype, compMethod,filtMethod,intlMethod;
 };
 
@@ -52,9 +52,10 @@ void openSortFile(string fileName){
 	if (fopen.fail()){
 		cout << "File not found"<< endl;
 		EXIT_FAILURE;							// Quits programme if file not found
-		}
+	}
 	
 	else{
+		cout << "Loading " << fileName<<endl;
 		ostringstream ss;						// Use string stream instead of
 		ss<<fopen.rdbuf();						// getline because getline ignores
 		signature=ss.str();						// whitespace and stuff like 0x1a
@@ -88,19 +89,46 @@ void openSortFile(string fileName){
 	}
 }
 
-void findIHDR(){
-	
-	vector <unsigned char> temp;
-	temp=file.rawCode;
+void findIHDR(){		// ____ICHK____
+						//		   ^ up pointer is val of i
 	
 	for (int i=0; i<file.rawCode.size();i++){
-		// Find IHDR chunk location
+		// Find IHDR chunk location with ascii
 		if (file.rawCode.at(i)==0x49 && file.rawCode.at(i+1)==0x48 && file.rawCode.at(i+2)==0x44 && file.rawCode.at(i+3)==0x52){
 			
 			file.IHDRloc=i+4;		// make the index right after IHDR known
 			
 		}
 	}
+}
+
+void findIEND(){
+	
+	for (int i=0; i<file.rawCode.size();i++){
+		// Find IEND chunk location using ascii
+		if (file.rawCode.at(i)==0x49 && file.rawCode.at(i+1)==0x45 && file.rawCode.at(i+2)==0x4e && file.rawCode.at(i+3)==0x44){
+			
+			file.IENDloc=i+4;		// make the index right after IEND known
+			
+		}
+	}
+}
+
+void IENDinfo(){		// ____IEND____
+						//		   ^ up pointer is val of i (file.IENDloc)
+	
+	// IEND length
+	
+	int num1,num2,num3,num4;	// dont need to set to 0 becasue value copied from vector
+	
+	num1=(file.rawCode.at(file.IHDRloc-8) << 24);	// bitshift to the left to add hex
+	num2=(file.rawCode.at(file.IHDRloc-7) << 16);	// 8 each because each hex is 8 bits
+	num3=(file.rawCode.at(file.IHDRloc-6) << 8);
+	num4= file.rawCode.at(file.IHDRloc-5);
+	
+	// logically add bitshifted values to get correct int from hex
+	file.IENDlen =(num1) | (num2) | (num3) | (num4);
+	
 }
 
 void IHDRinfo(){		// ____IHDR____
@@ -139,6 +167,8 @@ void IHDRinfo(){		// ____IHDR____
 	
 	file.height=(num9) | (num10) | (num11) | (num12);
 	
+	// Other info only 1 byte each
+	
 	file.bitdepth=file.rawCode.at(file.IHDRloc+8);
 	file.colortype=file.rawCode.at(file.IHDRloc+9);
 	file.compMethod=file.rawCode.at(file.IHDRloc+10);
@@ -159,6 +189,7 @@ void IHDRinfo(){		// ____IHDR____
 	
 }
 
+
 int main()
 {
 	string fileName;
@@ -173,5 +204,8 @@ int main()
 	findIHDR();			// find loc of IHDR
 	IHDRinfo();
 	
+	
+	findIEND();
+	IENDinfo();
 }
 
