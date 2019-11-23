@@ -13,12 +13,13 @@
 #include <string>
 #include <sstream>
 #include "puff.h"
+#include <vector>
 using namespace std;
 
 class file{			// initiate class to store sections of png
 public:
 //	uint32_t test,rawCode;
-	string rawCode;
+	vector <unsigned char> rawCode;
 	string fileName;
 	
 };
@@ -32,7 +33,8 @@ void openSortFile(string fileName){
 	unsigned char sign[8], buffer[512];
 	string signature,temp;
 
-	ifstream fopen(fileName, std::ios::binary);		// rb is read in binary(hex)
+	ifstream fopen(fileName,std::ios::binary);		// rb is read in binary(hex)
+	
 
 	if (fopen.fail()){
 		cout << "File not found"<< endl;
@@ -40,16 +42,21 @@ void openSortFile(string fileName){
 		}
 	
 	else{
-//		fopen.read((unsigned char)&buffer[0], sizeof(buffer));
-		while(getline (fopen, temp)){
-			file.rawCode.append(temp);
+		while(!fopen.eof()){
+			getline(fopen,temp);
+			signature.append(temp);
 		}
-		cout << file.rawCode.at(1);
-		int num = std::stoi(file.rawCode, 0, 16);  // trying to convert string to hex
-
-
-		if(file.rawCode.at(0)==0x89 && file.rawCode.at(1)==0x04 && file.rawCode.at(2)==0x4E && file.rawCode.at(3)==0x47 && file.rawCode.at(4)==0x0D && file.rawCode.at(5)==0x0A &&
-			file.rawCode.at(6)==0x1A && file.rawCode.at(7)==0x0A){
+		
+		for (int i=0;i<signature.length();i++){
+			file.rawCode.push_back(signature.at(i));
+		}
+		for (int i=0;i<7;i++)
+			cout << file.rawCode.at(i);
+		
+		if(file.rawCode.at(0)==0x89 && file.rawCode.at(1)==0x50 &&
+		   file.rawCode.at(2)==0x4e && file.rawCode.at(3)==0x47 &&
+		   file.rawCode.at(4)==0x0d && file.rawCode.at(5)==0x0a &&
+		   file.rawCode.at(6)==0x1a && file.rawCode.at(7)==0x0a){
 			 /* must have signature of file in
 			 hex is 0x89 0x50 0x4E 0x47*/
 			cout << "Success"<< endl;
