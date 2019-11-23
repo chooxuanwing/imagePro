@@ -38,11 +38,19 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		CCB8510B2389F43C0031E91F /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		CCBDF4DB237F615E00021E4C = {
 			isa = PBXGroup;
 			children = (
 				CCBDF4E6237F615E00021E4C /* imagePro */,
 				CCBDF4E5237F615E00021E4C /* Products */,
+				CCB8510B2389F43C0031E91F /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -64,11 +72,22 @@
 		};
 /* End PBXGroup section */
 
+/* Begin PBXHeadersBuildPhase section */
+		CCB851122389F7810031E91F /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
 /* Begin PBXNativeTarget section */
 		CCBDF4E3237F615E00021E4C /* imagePro */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = CCBDF4EB237F615E00021E4C /* Build configuration list for PBXNativeTarget "imagePro" */;
 			buildPhases = (
+				CCB851122389F7810031E91F /* Headers */,
 				CCBDF4E0237F615E00021E4C /* Sources */,
 				CCBDF4E1237F615E00021E4C /* Frameworks */,
 				CCBDF4E2237F615E00021E4C /* CopyFiles */,
@@ -239,6 +258,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
+				NEW_SETTING = "";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -247,6 +267,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
+				NEW_SETTING = "";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
