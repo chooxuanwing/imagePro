@@ -51,7 +51,7 @@ void openSortFile(string fileName){
 	
 	if (fopen.fail()){
 		cout << "File not found"<< endl;
-		EXIT_FAILURE;							// Quits programme if file not found
+		exit(1);							// Quits programme if file not found
 	}
 	
 	else{
@@ -79,12 +79,12 @@ void openSortFile(string fileName){
 			// must have signature of file in
 			// decimal, 137 80 78 71 13 10 26 10 for all PNG
 			
-			cout << "Signature Valid"<< endl;
+			cout << "\nSignature Valid"<< endl;
 		}
 
 		else{
 			cout << "Signature invalid for PNG" << endl;
-			EXIT_FAILURE;
+			exit(1);
 		}
 	}
 }
@@ -175,29 +175,28 @@ void IHDRinfo(){		// ____IHDR____
 	file.filtMethod=file.rawCode.at(file.IHDRloc+11);
 	file.intlMethod=file.rawCode.at(file.IHDRloc+12);
 	
-	
+	cout << "\nIHDR" << "\t\t\t"<<file.IHDRlen << endl;
+	cout << "width:\t\t\t" << file.width <<endl;
+	cout << "height:\t\t\t"<<file.height <<endl;
+	cout << "bitdepth:\t\t"<<file.bitdepth <<endl;
+	cout << "colortype:\t\t"<<file.colortype <<endl;
+	cout << "comp method:\t" <<file.compMethod <<endl;
+	cout << "filt method:\t" <<file.filtMethod <<endl;
+	cout << "intl method:\t"<<file.intlMethod <<endl;
 
-	cout << file.height <<endl;
-	cout << file.width <<endl;
-	cout << file.bitdepth <<endl;
-	cout << file.colortype <<endl;
-	cout << file.compMethod <<endl;
-	cout << file.filtMethod <<endl;
-	cout << file.intlMethod <<endl;
 
-
-	
 }
+
 
 
 int main()
 {
 	string fileName;
-	
+//	unsigned char a[20000]={};
 	cout << "Image Processing Software\n\nSpecify the name of the PNG file that you would like to process.\n>";
 	
-//	cin >> fileName;
-	fileName="brainbow.png";
+	cin >> fileName;
+//	fileName="brainbow.png";
 	
 	setInitial();
 	openSortFile(fileName);
@@ -207,5 +206,8 @@ int main()
 	
 	findIEND();
 	IENDinfo();
+	
+//	puff(a, a.size(), file.rawCode, file.rawCode.size());
+	  
 }
 
