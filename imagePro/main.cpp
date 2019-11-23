@@ -22,12 +22,26 @@ public:
 	vector <unsigned char> rawCode;
 //	vector <unsigned int> rawDec;
 	string fileName;
-	
+	int IHDRloc,IHDRlen;
+	int width, height, bitdepth,colortype, compMethod,filtMethod,intlMethod;
 };
 
 
 class file file;
 
+void setInitial(){		// sets initial values for var in class
+	
+	file.IHDRlen=0;
+	file.width=0;
+	file.height=0;
+	file.bitdepth=0;
+	file.colortype=0;
+	file.compMethod=0;
+	file.filtMethod=0;
+	file.intlMethod=0;
+	file.IHDRloc=0;
+	
+}
 
 void openSortFile(string fileName){
 
@@ -50,7 +64,7 @@ void openSortFile(string fileName){
 		//	.str func makes ss a string and keeps it in signature
 		//	stringstream primes signature so it can be streamed for processing as a string
 			 
-		for (int i=0;i<signature.length();i++){
+		for (int i=0;i<signature.length();i++){		// put stringstremed values into class
 			file.rawCode.push_back(signature.at(i));
 //			file.rawDec.push_back(signature.at(i));
 //			signature.at(i) >> std::ios::dec >> file.rawDec.at(i);
@@ -74,23 +88,75 @@ void openSortFile(string fileName){
 	}
 }
 
-void del_sign(){
+void findIHDR(){
 	
 	vector <unsigned char> temp;
 	temp=file.rawCode;
 	
 	for (int i=0; i<file.rawCode.size();i++){
-		if (file.rawCode.at(i)==0x49)					// find I
-			if (file.rawCode.at(i+1)==0x48)				// find H
-				if (file.rawCode.at(i+2)==0x44)			// find D
-					if (file.rawCode.at(i+3)==0x52){	// find R
-														// if IHDR all found
-						cout << i << "\t" << file.rawCode.at(i);
-						
-					}
-						
+		// Find IHDR chunk location
+		if (file.rawCode.at(i)==0x49 && file.rawCode.at(i+1)==0x48 && file.rawCode.at(i+2)==0x44 && file.rawCode.at(i+3)==0x52){
 			
+			file.IHDRloc=i+4;		// make the index right after IHDR known
+			
+		}
 	}
+}
+
+void IHDRinfo(){		// ____IHDR____
+						//		   ^ up pointer is val of i (file.IHDRloc)
+	// IHDR length
+	
+	int num1,num2,num3,num4;	// dont need to set to 0 becasue value copied from vector
+	
+	num1=(file.rawCode.at(file.IHDRloc-8) << 24);	// bitshift to the left to add hex
+	num2=(file.rawCode.at(file.IHDRloc-7) << 16);	// 8 each because each hex is 8 bits
+	num3=(file.rawCode.at(file.IHDRloc-6) << 8);
+	num4= file.rawCode.at(file.IHDRloc-5);
+	
+	// logically add bitshifted values to get correct int from hex
+	file.IHDRlen =(num1) | (num2) | (num3) | (num4);
+	
+	// Pic Width
+	
+	int num5,num6,num7,num8;
+	
+	num5=(file.rawCode.at(file.IHDRloc) << 24);		// bitshift to the left to add hex
+	num6=(file.rawCode.at(file.IHDRloc+1) << 16);
+	num7=(file.rawCode.at(file.IHDRloc+2) << 8);
+	num8= file.rawCode.at(file.IHDRloc+3);
+	
+	file.width=(num5) | (num6) | (num7) | (num8);
+	
+	// Pic Height
+	
+	int num9,num10,num11,num12;
+	
+	num9=(file.rawCode.at(file.IHDRloc+4) << 24);		// bitshift to the left to add hex
+	num10=(file.rawCode.at(file.IHDRloc+5) << 16);
+	num11=(file.rawCode.at(file.IHDRloc+6) << 8);
+	num12= file.rawCode.at(file.IHDRloc+7);
+	
+	file.height=(num9) | (num10) | (num11) | (num12);
+	
+	file.bitdepth=file.rawCode.at(file.IHDRloc+8);
+	file.colortype=file.rawCode.at(file.IHDRloc+9);
+	file.compMethod=file.rawCode.at(file.IHDRloc+10);
+	file.filtMethod=file.rawCode.at(file.IHDRloc+11);
+	file.intlMethod=file.rawCode.at(file.IHDRloc+12);
+	
+	
+
+	cout << file.height <<endl;
+	cout << file.width <<endl;
+	cout << file.bitdepth <<endl;
+	cout << file.colortype <<endl;
+	cout << file.compMethod <<endl;
+	cout << file.filtMethod <<endl;
+	cout << file.intlMethod <<endl;
+
+
+	
 }
 
 int main()
@@ -102,9 +168,10 @@ int main()
 //	cin >> fileName;
 	fileName="brainbow.png";
 	
+	setInitial();
 	openSortFile(fileName);
-//	del_sign();			// might not need to delete
-	
+	findIHDR();			// find loc of IHDR
+	IHDRinfo();
 	
 }
 
