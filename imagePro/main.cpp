@@ -20,13 +20,14 @@ class file{			// initiate class to store sections of png
 public:
 //	uint32_t test,rawCode;
 	vector <unsigned char> rawCode;
-	vector <unsigned int> rawDec;
+//	vector <unsigned int> rawDec;
 	string fileName;
 	
 };
 
 
 class file file;
+
 
 void openSortFile(string fileName){
 
@@ -36,11 +37,11 @@ void openSortFile(string fileName){
 	
 	if (fopen.fail()){
 		cout << "File not found"<< endl;
-		EXIT_FAILURE;			// Quits programme if file not found
+		EXIT_FAILURE;							// Quits programme if file not found
 		}
 	
 	else{
-		ostringstream ss;							// Use string stream instead of
+		ostringstream ss;						// Use string stream instead of
 		ss<<fopen.rdbuf();						// getline because getline ignores
 		signature=ss.str();						// whitespace and stuff like 0x1a
 		stringstream line(signature);
@@ -51,10 +52,9 @@ void openSortFile(string fileName){
 			 
 		for (int i=0;i<signature.length();i++){
 			file.rawCode.push_back(signature.at(i));
-			file.rawDec.push_back(signature.at(i));
-			signature.at(i) >> std::ios::dec >> file.rawDec.at(i);
+//			file.rawDec.push_back(signature.at(i));
+//			signature.at(i) >> std::ios::dec >> file.rawDec.at(i);
 		}
-		
 		
 		if(file.rawCode.at(0)==137 && file.rawCode.at(1)==80 &&
 			file.rawCode.at(2)==78 && file.rawCode.at(3)==71 &&
@@ -74,14 +74,37 @@ void openSortFile(string fileName){
 	}
 }
 
+void del_sign(){
+	
+	vector <unsigned char> temp;
+	temp=file.rawCode;
+	
+	for (int i=0; i<file.rawCode.size();i++){
+		if (file.rawCode.at(i)==0x49)					// find I
+			if (file.rawCode.at(i+1)==0x48)				// find H
+				if (file.rawCode.at(i+2)==0x44)			// find D
+					if (file.rawCode.at(i+3)==0x52){	// find R
+														// if IHDR all found
+						cout << i << "\t" << file.rawCode.at(i);
+						
+					}
+						
+			
+	}
+}
+
 int main()
 {
 	string fileName;
+	
 	cout << "Image Processing Software\n\nSpecify the name of the PNG file that you would like to process.\n>";
+	
 //	cin >> fileName;
 	fileName="brainbow.png";
 	
-	
 	openSortFile(fileName);
+//	del_sign();			// might not need to delete
+	
+	
 }
 
