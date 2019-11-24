@@ -959,7 +959,7 @@ int main()
 	printCHRM();
 	printIDAT();
 	printIEND();
-//	IDATinfo();		// run all first becuase this is dependent on their data, more than 1 idat solving...
+//	IDATinfo();		// run all first becuase this is dependent on their data, more than 1 idat solving....
 
 	
 	
