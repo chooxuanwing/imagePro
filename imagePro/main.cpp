@@ -17,12 +17,11 @@
 #include <setjmp.h>             /* for setjmp(), longjmp(), and jmp_buf */
 #include "puff.h"               /* prototype for puff() */
 
-#define local static            /* for local function definitions */
+// deflate puff code start *************************************************
+// below also includes my own class file and CRC check from w3.com/TR/PNG
+// Copyright (C) 2002-2013 Mark Adler
 
-/*
- * Maximums for allocations and loops.  It is not useful to change these --
- * they are fixed by the deflate format.
- */
+#define local static            /* for local function definitions */
 #define MAXBITS 15              /* maximum bits in a code */
 #define MAXLCODES 286           /* maximum number of literal/length codes */
 #define MAXDCODES 30            /* maximum number of distance codes */
@@ -30,18 +29,6 @@
 #define FIXLCODES 288           /* number of fixed literal/length codes */
 
 using namespace std;
-
-class file{			// initiate class to store sections of png
-public:
-//	uint32_t test,rawCode;
-	vector <unsigned char> rawCode, IDATdata;
-//	vector <unsigned int> rawDec;
-	string fileName;
-	vector<int> IDATloc,IDATlen;
-	int IHDRloc,IHDRlen, IENDloc, IENDlen, PHYSloc, PHYSlen, CHRMloc, CHRMlen;
-	int width, height, bitdepth,colortype, compMethod,filtMethod,intlMethod;
-	
-};
 
 struct state {
     /* output state */
@@ -65,9 +52,21 @@ struct huffman {
     short *symbol;      /* canonically ordered symbols */
 };
 
+
+class file{			// initiate class to store sections of png
+public:
+//	uint32_t test,rawCode;
+	vector <unsigned char> rawCode, IDATdata;
+//	vector <unsigned int> rawDec;
+	string fileName;
+	vector<int> IDATloc,IDATlen;
+	unsigned long int IHDRloc,IHDRlen, IENDloc, IENDlen, PHYSloc, PHYSlen, CHRMloc, CHRMlen, Tlen, crcIEND,crcIHDR,crcPHYS,crcCHRM;
+	int width, height, bitdepth,colortype, compMethod,filtMethod,intlMethod;
+	
+};
+
+
 class file file;
-
-
 
 
 local int bits(struct state *s, int need)
@@ -488,11 +487,64 @@ int puff(unsigned char *dest,           /* pointer to destination pointer */
     return err;
 }
 
+// CRC chrck *****************************************
+
+/* Table of CRCs of all 8-bit messages. */
+ unsigned long crc_table[256];
+ 
+ /* Flag: has the table been computed? Initially false. */
+ int crc_table_computed = 0;
+ 
+ /* Make the table for a fast CRC. */
+ void make_crc_table(void)
+ {
+   unsigned long c;
+   int n, k;
+ 
+   for (n = 0; n < 256; n++) {
+	 c = (unsigned long) n;
+	 for (k = 0; k < 8; k++) {
+	   if (c & 1)
+		 c = 0xedb88320L ^ (c >> 1);
+	   else
+		 c = c >> 1;
+	 }
+	 crc_table[n] = c;
+   }
+   crc_table_computed = 1;
+ }
+
+ /* Update a running CRC with the bytes buf[0..len-1]--the CRC
+	should be initialized to all 1's, and the transmitted value
+	is the 1's complement of the final running CRC (see the
+	crc() routine below). */
+ 
+ unsigned long update_crc(unsigned long crc, unsigned char *buf,
+						  int len)
+ {
+   unsigned long c = crc;
+   int n;
+ 
+   if (!crc_table_computed)
+	 make_crc_table();
+   for (n = 0; n < len; n++) {
+	 c = crc_table[(c ^ buf[n]) & 0xff] ^ (c >> 8);
+   }
+   return c;
+ }
+ 
+ /* Return the CRC of the bytes buf[0..len-1]. */
+ unsigned long crc(unsigned char *buf, int len)
+ {
+   return update_crc(0xffffffffL, buf, len) ^ 0xffffffffL;
+ }
 
 
+// CRC check end ***************************************
 
 void setInitial(){		// sets initial values for var in class
 	
+	file.Tlen=0;
 	file.IHDRlen=0;
 	file.width=0;
 	file.height=0;
@@ -552,7 +604,7 @@ void openSortFile(string fileName){
 }
 
 void findIHDR(){		// ____ICHK____
-						//		   ^ up pointer is val of i
+						//		  ^ up pointer is val of i
 	
 	for (int i=0; i<file.rawCode.size();i++){
 		// Find IHDR chunk location with ascii
@@ -578,16 +630,17 @@ void findIEND(){
 
 void findIDAT(){
 	
-	for (int i=0; i<file.rawCode.size();i++){
 		// Find IDAT chunk location using ascii
-		if (file.rawCode.at(i)==0x49 && file.rawCode.at(i+1)==0x44 && file.rawCode.at(i+2)==0x41 && file.rawCode.at(i+3)==0x54){
-			file.IDATloc.push_back(i+4);		// make the index right after IDAT known
+		for (int i=0;i<file.rawCode.size();i++){
+			if (file.rawCode.at(i)==0x49 && file.rawCode.at(i+1)==0x44 && file.rawCode.at(i+2)==0x41 && file.rawCode.at(i+3)==0x54){
+				
+				file.IDATloc.push_back(i+4);		// make the index on T of IDAT known
 												// put into vector becaue there uis more
 												// than 1 IDAT
 			
-		}
+		
 	}
-	
+	}
 }
 
 void findPHYS(){
@@ -598,6 +651,12 @@ void findPHYS(){
 			
 			file.PHYSloc=i+4;		// make the index right after pHYs known
 			
+			unsigned char *crcPHYS=new unsigned char [4];
+			for (int i=0;i<4;i++){
+				int loc=file.PHYSloc-8+i;
+				crcPHYS[i]=file.rawCode.at(loc);
+			}
+			file.crcPHYS=crc(crcPHYS,4);
 		}
 	}
 }
@@ -610,6 +669,12 @@ void findCHRM(){
 			
 			file.CHRMloc=i+4;		// make the index right after cHRM known
 			
+			unsigned char *crcCHRM=new unsigned char [4];
+			for (int i=0;i<4;i++){
+				int loc=file.CHRMloc-8+i;
+				crcCHRM[i]=file.rawCode.at(loc);
+			}
+			file.crcCHRM=crc(crcCHRM,4);
 		}
 	}
 }
@@ -622,14 +687,21 @@ void IENDinfo(){		// ____IEND____
 	
 	int num1,num2,num3,num4;	// dont need to set to 0 becasue value copied from vector
 	
-	num1=(file.rawCode.at(file.IHDRloc-8) << 24);	// bitshift to the left to add hex
-	num2=(file.rawCode.at(file.IHDRloc-7) << 16);	// 8 each because each hex is 8 bits
-	num3=(file.rawCode.at(file.IHDRloc-6) << 8);
-	num4= file.rawCode.at(file.IHDRloc-5);
+	num1=(file.rawCode.at(file.IENDloc-8) << 24);	// bitshift to the left to add hex
+	num2=(file.rawCode.at(file.IENDloc-7) << 16);	// 8 each because each hex is 8 bits
+	num3=(file.rawCode.at(file.IENDloc-6) << 8);
+	num4= file.rawCode.at(file.IENDloc-5);
 	
 	// logically add bitshifted values to get correct int from hex
 	file.IENDlen =(num1) | (num2) | (num3) | (num4);
 	
+	unsigned char *crcIEND=new unsigned char [4];
+	
+	for (int i=0;i<4;i++){
+		int loc=file.IENDloc+i;
+		crcIEND[i]=file.rawCode.at(loc);
+	}
+	file.crcIEND=crc(crcIEND,4);
 }
 
 void IHDRinfo(){		// ____IHDR____
@@ -675,17 +747,15 @@ void IHDRinfo(){		// ____IHDR____
 	file.compMethod=file.rawCode.at(file.IHDRloc+10);
 	file.filtMethod=file.rawCode.at(file.IHDRloc+11);
 	file.intlMethod=file.rawCode.at(file.IHDRloc+12);
+
+	// crc calc
 	
-	cout << "\nIHDR" << "\t\t\t"<<file.IHDRlen << endl;
-	cout << "width:\t\t\t" << file.width <<endl;
-	cout << "height:\t\t\t"<<file.height <<endl;
-	cout << "bitdepth:\t\t"<<file.bitdepth <<endl;
-	cout << "colortype:\t\t"<<file.colortype <<endl;
-	cout << "comp method:\t" <<file.compMethod <<endl;
-	cout << "filt method:\t" <<file.filtMethod <<endl;
-	cout << "intl method:\t"<<file.intlMethod <<endl;
-
-
+	unsigned char *crcIHDR=new unsigned char [4];
+	for (int i=0;i<4;i++){
+		int loc=file.IHDRloc+13+i;
+		crcIHDR[i]=file.rawCode.at(loc);
+	}
+	file.crcIHDR=crc(crcIHDR,4);
 }
 
 void IDATchunks(){
@@ -696,27 +766,28 @@ void IDATchunks(){
 		
 		// get idat chunk data, start 2 bytes after chunk name and end right before CRC
 		// __IDAT_____ ... _________IDAT__
-		//       ^ S      	    E       ^  , ^=IDATloc and ^=IENDloc, S and E=for loop strt and end pt
+		//       ^ S      	   E        ^   , ^=IDATloc and ^=IENDloc, S and E=for loop strt and end pt
 		
 		// calculate length of chunk
 		num1=(file.rawCode.at(file.IDATloc.at(i)-8) << 24);// bitshift to the left to add hex
 		num2=(file.rawCode.at(file.IDATloc.at(i)-7) << 16);// 16 each because each hex is 8 bits, and 2 hex
 		num3=(file.rawCode.at(file.IDATloc.at(i)-6) << 8);
 		num4=(file.rawCode.at(file.IDATloc.at(i)-5) );
-		
+
 		// logically add bitshifted values to get correct int from hex
 		len =(num1) | (num2) | (num3) | (num4);
+		file.Tlen +=len;							// counts tot length of IDAT
 		file.IDATlen.push_back(len);
 		
 		// attempt to deflate indivudual chunks
 		
-		start =file.IDATloc.at(i);			// start right after IDAT
-		end=file.IDATloc.at(i+1)-8;			// end before next IDAT and crc chunk
+		start =file.IDATloc.at(i)+1;			// start right after IDAT
+		end=file.IDATloc.at(i+1)-9;			// end before next IDAT and crc chunk
 		int difference =end-start;			// length of data bytes for each chunk
 		
 		// make inputs for puff
 		unsigned long sourcelen=difference;
-		unsigned char *source = new unsigned char [sourcelen]; 			// make array pointer
+		unsigned char *source = new unsigned char [sourcelen]; 			// make array only IDAT data pointer
 		unsigned long destlen = file.width*file.height;
 		unsigned char *dest = new unsigned char [destlen+6];
 
@@ -725,17 +796,13 @@ void IDATchunks(){
 			y=i-start;
 			source[y]=file.rawCode.at(i);
 		}
-
+		
 		int puffVal= puff(dest, &destlen, source, &sourcelen);
 		cout << puffVal  << endl;
 		
 	}
 	
 	// for last IDAT chunk
-	
-	// get idat chunk data, start 2 bytes after chunk name and end right before CRC
-	// __IDAT_____ ... _________IEND__
-	//       ^ S      	    E       ^  , ^=IDATloc and ^=IENDloc, S and E=for loop strt and end pt
 	// calculate length of chunk
 	
 	long unsigned int e=file.IDATloc.size()-1;
@@ -746,12 +813,13 @@ void IDATchunks(){
 	num4=(file.rawCode.at(file.IDATloc.at(e)-5) );
 	
 	len =(num1) | (num2) | (num3) | (num4);
+	file.Tlen += len; // counts total lenghth of IDAT
 	file.IDATlen.push_back(len);
 	
 	// attempt to deflate indivudual chunks
 	
-	start =file.IDATloc.at(e);			// start right after IDAT
-	end=file.IENDloc-8;					// end before IEND and crc chunk
+	start =file.IDATloc.at(e)+1;			// start right after IDAT
+	end=file.IENDloc-9;					// end before IEND and crc chunk
 	int difference =end-start;			// length of data bytes for each chunk
 	
 	// make inputs for puff
@@ -833,6 +901,36 @@ void PHYSinfo(){
 	file.PHYSlen =(num1) | (num2) | (num3) | (num4);
 }
 
+void printIHDR(){
+	
+	cout << "\nIHDR" << "\t\t\t"<<file.IHDRlen << "\t" << file.crcIHDR <<endl;	cout << "width:\t\t\t" << file.width <<endl;
+	cout << "height:\t\t\t"<<file.height <<endl;
+	cout << "bitdepth:\t\t"<<file.bitdepth <<endl;
+	cout << "colortype:\t\t"<<file.colortype <<endl;
+	cout << "comp method:\t" <<file.compMethod <<endl;
+	cout << "filt method:\t" <<file.filtMethod <<endl;
+	cout << "intl method:\t"<<file.intlMethod <<endl;
+}
+
+void printPHYS(){
+	 
+	cout <<"\npHYs\t"<< file.PHYSlen << "\t"<< file.crcPHYS<<endl;
+}
+
+void printCHRM(){
+	
+	cout <<"\ncHRM\t"<< file.CHRMlen << "\t"<< file.crcCHRM<<endl;
+}
+
+void printIDAT(){
+	
+	cout <<"\nIDAT\t" << file.Tlen << "\tCRC" <<endl;
+}
+
+void printIEND(){
+	
+	cout <<"\nIEND\t"<< file.IENDlen << "\t"<< file.crcIEND<<endl;
+}
 
 int main()
 {
@@ -855,6 +953,12 @@ int main()
 	findIEND();
 	IENDinfo();
 	IDATchunks();
+	
+	printIHDR();
+	printPHYS();
+	printCHRM();
+	printIDAT();
+	printIEND();
 //	IDATinfo();		// run all first becuase this is dependent on their data, more than 1 idat solving...
 
 	
