@@ -764,6 +764,7 @@ void IHDRinfo(){		// ____IHDR____
 	}
 	file.crcIHDR=crc(crcIHDR,4);
 	
+	
 }
 
 void IDATchunks(){
