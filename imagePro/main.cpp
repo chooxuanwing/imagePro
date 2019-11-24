@@ -750,12 +750,20 @@ void IHDRinfo(){		// ____IHDR____
 
 	// crc calc
 	
-	unsigned char *crcIHDR=new unsigned char [4];
+//	unsigned char *crcIHDR=new unsigned char [file.IHDRlen];	// data trial
+//	for (int i=0;i<file.IHDRlen;i++){
+//		int loc=file.IHDRloc+i;
+//		crcIHDR[i]=file.rawCode.at(loc);
+//	}
+//	file.crcIHDR=crc(crcIHDR,4);
+	
+	unsigned char *crcIHDR=new unsigned char [4];		//crc trial
 	for (int i=0;i<4;i++){
 		int loc=file.IHDRloc+13+i;
 		crcIHDR[i]=file.rawCode.at(loc);
 	}
 	file.crcIHDR=crc(crcIHDR,4);
+	
 }
 
 void IDATchunks(){
