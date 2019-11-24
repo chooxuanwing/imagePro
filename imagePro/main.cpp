@@ -37,7 +37,8 @@ public:
 	vector <unsigned char> rawCode, IDATdata;
 //	vector <unsigned int> rawDec;
 	string fileName;
-	int IHDRloc,IHDRlen, IENDloc, IENDlen, IDATloc, IDATlen, PHYSloc, PHYSlen, CHRMloc, CHRMlen;
+	vector<int> IDATloc,IDATlen;
+	int IHDRloc,IHDRlen, IENDloc, IENDlen, PHYSloc, PHYSlen, CHRMloc, CHRMlen;
 	int width, height, bitdepth,colortype, compMethod,filtMethod,intlMethod;
 	
 };
@@ -568,7 +569,7 @@ void findIEND(){
 	for (int i=0; i<file.rawCode.size();i++){
 		// Find IEND chunk location using ascii
 		if (file.rawCode.at(i)==0x49 && file.rawCode.at(i+1)==0x45 && file.rawCode.at(i+2)==0x4e && file.rawCode.at(i+3)==0x44){
-			
+
 			file.IENDloc=i+4;		// make the index right after IEND known
 			
 		}
@@ -580,8 +581,9 @@ void findIDAT(){
 	for (int i=0; i<file.rawCode.size();i++){
 		// Find IDAT chunk location using ascii
 		if (file.rawCode.at(i)==0x49 && file.rawCode.at(i+1)==0x44 && file.rawCode.at(i+2)==0x41 && file.rawCode.at(i+3)==0x54){
-			
-			file.IDATloc=i+4;		// make the index right after IDAT known
+			file.IDATloc.push_back(i+4);		// make the index right after IDAT known
+												// put into vector becaue there uis more
+												// than 1 IDAT
 			
 		}
 	}
@@ -686,36 +688,124 @@ void IHDRinfo(){		// ____IHDR____
 
 }
 
-void IDATinfo(){
+void IDATchunks(){
 	
-	int num1,num2,num3,num4;	// dont need to set to 0 becasue value copied from vector
+	int num1,num2,num3,num4, len, start ,end,y;
 	
-	num1=(file.rawCode.at(file.IDATloc-8) << 24);	// bitshift to the left to add hex
-	num2=(file.rawCode.at(file.IDATloc-7) << 16);	// 8 each because each hex is 8 bits
-	num3=(file.rawCode.at(file.IDATloc-6) << 8);
-	num4= file.rawCode.at(file.IDATloc-5);
-	
-	// logically add bitshifted values to get correct int from hex
-	file.IDATlen =(num1) | (num2) | (num3) | (num4);
-	
-	// attempt to deflate idat
-	
-	unsigned long sourcelen=file.IENDloc-6-file.IDATloc+2;
-	unsigned char *source = new unsigned char[sourcelen];
-	unsigned long destlen = file.width*file.height;
-	unsigned char *dest = new unsigned char[destlen];
-	
-	// get idat chunk data, start 2 bytes after chunk name and end right before CRC
-	// __IDAT_____ ... ____IEND__
-	//       s ^        ^      e  , s=IDATloc, e=IENDloc, ^=for loop strt and end pt
-	
-	for (int i= file.IDATloc+2;i< file.IENDloc-6;i++){
-		source[i]=file.rawCode.at(i);
+	for (int i=0; i<file.IDATloc.size()-1;i++){  // for chunks which arent the last
+		
+		// get idat chunk data, start 2 bytes after chunk name and end right before CRC
+		// __IDAT_____ ... _________IDAT__
+		//       ^ S      	    E       ^  , ^=IDATloc and ^=IENDloc, S and E=for loop strt and end pt
+		
+		// calculate length of chunk
+		num1=(file.rawCode.at(file.IDATloc.at(i)-8) << 24);// bitshift to the left to add hex
+		num2=(file.rawCode.at(file.IDATloc.at(i)-7) << 16);// 16 each because each hex is 8 bits, and 2 hex
+		num3=(file.rawCode.at(file.IDATloc.at(i)-6) << 8);
+		num4=(file.rawCode.at(file.IDATloc.at(i)-5) );
+		
+		// logically add bitshifted values to get correct int from hex
+		len =(num1) | (num2) | (num3) | (num4);
+		file.IDATlen.push_back(len);
+		
+		// attempt to deflate indivudual chunks
+		
+		start =file.IDATloc.at(i);			// start right after IDAT
+		end=file.IDATloc.at(i+1)-8;			// end before next IDAT and crc chunk
+		int difference =end-start;			// length of data bytes for each chunk
+		
+		// make inputs for puff
+		unsigned long sourcelen=difference;
+		unsigned char *source = new unsigned char [sourcelen]; 			// make array pointer
+		unsigned long destlen = file.width*file.height;
+		unsigned char *dest = new unsigned char [destlen+6];
+
+		//make source array velue equal to vector
+		for (int i= start;i< end;i++){
+			y=i-start;
+			source[y]=file.rawCode.at(i);
+		}
+
+		int puffVal= puff(dest, &destlen, source, &sourcelen);
+		cout << puffVal  << endl;
+		
 	}
 	
+	// for last IDAT chunk
+	
+	// get idat chunk data, start 2 bytes after chunk name and end right before CRC
+	// __IDAT_____ ... _________IEND__
+	//       ^ S      	    E       ^  , ^=IDATloc and ^=IENDloc, S and E=for loop strt and end pt
+	// calculate length of chunk
+	
+	long unsigned int e=file.IDATloc.size()-1;
+	
+	num1=(file.rawCode.at(file.IDATloc.at(e)-8) << 24);// bitshift to the left to add hex
+	num2=(file.rawCode.at(file.IDATloc.at(e)-7) << 16);// 16 each because each hex is 8 bits, and 2 hex
+	num3=(file.rawCode.at(file.IDATloc.at(e)-6) << 8);
+	num4=(file.rawCode.at(file.IDATloc.at(e)-5) );
+	
+	len =(num1) | (num2) | (num3) | (num4);
+	file.IDATlen.push_back(len);
+	
+	// attempt to deflate indivudual chunks
+	
+	start =file.IDATloc.at(e);			// start right after IDAT
+	end=file.IENDloc-8;					// end before IEND and crc chunk
+	int difference =end-start;			// length of data bytes for each chunk
+	
+	// make inputs for puff
+	unsigned long sourcelen=difference;
+	unsigned char *source = new unsigned char [sourcelen]; 			// make array pointer
+	unsigned long destlen = file.width*file.height;
+	unsigned char *dest = new unsigned char [destlen+6];
+
+	//make source array velue equal to vector
+	for (int i= start;i< end;i++){
+		y=i-start;
+		source[y]=file.rawCode.at(i);
+	}
+
 	int puffVal= puff(dest, &destlen, source, &sourcelen);
 	cout << puffVal <<endl;
 }
+
+//void IDATinfo(){
+//
+//	int num1,num2,num3,num4;	// dont need to set to 0 becasue value copied from vector
+//
+//	// calculate length of chunk
+//	num1=(file.rawCode.at(file.IDATloc-8) << 24);	// bitshift to the left to add hex
+//	num2=(file.rawCode.at(file.IDATloc-7) << 16);	// 8 each because each hex is 8 bits
+//	num3=(file.rawCode.at(file.IDATloc-6) << 8);
+//	num4= file.rawCode.at(file.IDATloc-5);
+//
+//	// logically add bitshifted values to get correct int from hex
+//	file.IDATlen =(num1) | (num2) | (num3) | (num4);
+//
+//	// attempt to deflate idat
+//
+//	 //get idat chunk data, start 2 bytes after chunk name and end right before CRC
+//	// __IDAT_____ ... _________IEND__
+//	 //      s ^       ^            e  , s=IDATloc, e=IENDloc, ^=for loop strt and end pt
+//
+//	int start, end;
+//	start =file.IDATloc;			// start right after IDAT
+//	end=file.IENDloc-9;				// ignore IEND and crc 4 chunk check.
+//	int difference =end-start;		// length of data bytes
+//	unsigned long sourcelen=difference;
+//	unsigned char *source = new unsigned char [sourcelen]; 			// make array pointer
+//	unsigned long destlen = file.width*file.height;
+//	unsigned char *dest = new unsigned char [destlen+6];
+//
+//	for (int i= start;i< end;i++){
+//		int y=i-start;
+//		source[y]=file.rawCode.at(i);
+//	}
+//
+//	int puffVal= puff(dest, &destlen, source, &sourcelen);
+//	cout << puffVal <<endl;
+//}
 
 void CHRMinfo(){
 	
@@ -758,14 +848,15 @@ int main()
 	findIHDR();			// find loc of IHDR
 	IHDRinfo();
 	findIDAT();
-	IDATinfo();
 	findCHRM();
 	CHRMinfo();
 	findPHYS();
 	PHYSinfo();
 	findIEND();
 	IENDinfo();
-	
+	IDATchunks();
+//	IDATinfo();		// run all first becuase this is dependent on their data, more than 1 idat solving...
+
 	
 	
 //	puff(a, a.size(), file.rawCode, file.rawCode.size());
