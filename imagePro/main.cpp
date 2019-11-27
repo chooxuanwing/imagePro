@@ -57,7 +57,7 @@ class file{			// initiate class to store sections of png
 public:
 //	uint32_t test,rawCode;
 	vector <unsigned char> rawCode, IDATdata;
-//	vector <unsigned int> rawDec;
+	vector <unsigned char> rawDec, Red, Green, Blue, Zeros,alpha;
 	string fileName;
 	vector<int> IDATloc,IDATlen;
 	unsigned long int IHDRloc,IHDRlen, IENDloc, IENDlen, PHYSloc, PHYSlen, CHRMloc, CHRMlen, Tlen, crcIEND,crcIHDR,crcPHYS,crcCHRM;
@@ -772,11 +772,11 @@ void IDATchunks(){
 	int num1,num2,num3,num4, len, start ,end,y;
 	
 	for (int i=0; i<file.IDATloc.size()-1;i++){  // for chunks which arent the last
-		
+
 		// get idat chunk data, start 2 bytes after chunk name and end right before CRC
 		// __IDAT_____ ... _________IDAT__
 		//       ^ S      	   E        ^   , ^=IDATloc and ^=IENDloc, S and E=for loop strt and end pt
-		
+
 		// calculate length of chunk
 		num1=(file.rawCode.at(file.IDATloc.at(i)-8) << 24);// bitshift to the left to add hex
 		num2=(file.rawCode.at(file.IDATloc.at(i)-7) << 16);// 16 each because each hex is 8 bits, and 2 hex
@@ -787,28 +787,43 @@ void IDATchunks(){
 		len =(num1) | (num2) | (num3) | (num4);
 		file.Tlen +=len;							// counts tot length of IDAT
 		file.IDATlen.push_back(len);
-		
-		// attempt to deflate indivudual chunks
-		
+
 		start =file.IDATloc.at(i)+1;			// start right after IDAT
 		end=file.IDATloc.at(i+1)-9;			// end before next IDAT and crc chunk
 		int difference =end-start;			// length of data bytes for each chunk
-		
-		// make inputs for puff
-		unsigned long sourcelen=difference;
-		unsigned char *source = new unsigned char [sourcelen]; 			// make array only IDAT data pointer
-		unsigned long destlen = file.width*file.height;
-		unsigned char *dest = new unsigned char [destlen+6];
 
-		//make source array velue equal to vector
-		for (int i= start;i< end;i++){
-			y=i-start;
-			source[y]=file.rawCode.at(i);
+		for (int i=0;i<len/4;i+=4){
+			
+			int r=file.rawCode.at(i-1+start);
+			file.Red.push_back(r);
+//			cout<<y<<endl;
+			int g=file.rawCode.at(i-1+1+start);
+			file.Green.push_back(g);
+			int b=file.rawCode.at(file.rawCode.at(i-1+2+start));
+			file.Blue.push_back(b);
+			int a=file.rawCode.at(file.rawCode.at(i-1+3+start));
+			file.alpha.push_back(a);
 		}
 		
-		int puffVal= puff(dest, &destlen, source, &sourcelen);
-		cout << puffVal  << endl;
 		
+		// attempt to deflate indivudual chunks
+
+		
+//		// make inputs for puff
+//		unsigned long sourcelen=difference;
+//		unsigned char *source = new unsigned char [sourcelen]; 			// make array only IDAT data pointer
+//		unsigned long destlen = file.width*file.height;
+//		unsigned char *dest = new unsigned char [destlen+6];
+//
+//		//make source array velue equal to vector
+//		for (int i= start+1;i< end;i++){
+//			y=i-start;
+//			source[y]=file.rawCode.at(i);
+//		}
+//
+//		int puffVal= puff(dest, &destlen, source, &sourcelen);
+//		cout << puffVal  << endl;
+
 	}
 	
 	// for last IDAT chunk
@@ -816,12 +831,18 @@ void IDATchunks(){
 	
 	long unsigned int e=file.IDATloc.size()-1;
 	
+	
 	num1=(file.rawCode.at(file.IDATloc.at(e)-8) << 24);// bitshift to the left to add hex
+//	cout <<file.rawCode.at(file.IDATloc.at(e)) << endl;
 	num2=(file.rawCode.at(file.IDATloc.at(e)-7) << 16);// 16 each because each hex is 8 bits, and 2 hex
+//	cout <<file.rawCode.at(file.IDATloc.at(e)-7) << endl;
 	num3=(file.rawCode.at(file.IDATloc.at(e)-6) << 8);
+//	cout << file.rawCode.at(file.IDATloc.at(e)-6)<< endl;
 	num4=(file.rawCode.at(file.IDATloc.at(e)-5) );
+//	cout <<file.rawCode.at(file.IDATloc.at(e)-5) << endl;
 	
 	len =(num1) | (num2) | (num3) | (num4);
+//	cout << len<<endl;
 	file.Tlen += len; // counts total lenghth of IDAT
 	file.IDATlen.push_back(len);
 	
@@ -831,20 +852,140 @@ void IDATchunks(){
 	end=file.IENDloc-9;					// end before IEND and crc chunk
 	int difference =end-start;			// length of data bytes for each chunk
 	
-	// make inputs for puff
-	unsigned long sourcelen=difference;
-	unsigned char *source = new unsigned char [sourcelen]; 			// make array pointer
-	unsigned long destlen = file.width*file.height;
-	unsigned char *dest = new unsigned char [destlen+6];
-
-	//make source array velue equal to vector
-	for (int i= start;i< end;i++){
-		y=i-start;
-		source[y]=file.rawCode.at(i);
+	for (int i=0;i<len/4;i+=4){
+				
+				int r=file.rawCode.at(i-1+start);
+				file.Red.push_back(r);
+	//			cout<<y<<endl;
+				int g=file.rawCode.at(i-1+1+start);
+				file.Green.push_back(g);
+				int b=file.rawCode.at(file.rawCode.at(i-1+2+start));
+				file.Blue.push_back(b);
+				int a=file.rawCode.at(file.rawCode.at(i-1+3+start));
+				file.alpha.push_back(a);
 	}
+//	// make inputs for puff
+//	unsigned long sourcelen=difference;
+//	unsigned char *source = new unsigned char [sourcelen]; 			// make array pointer
+//	unsigned long destlen = file.width*file.height;
+//	unsigned char *dest = new unsigned char [destlen+6];
+//
+//	//make source array velue equal to vector
+//	for (int i= start;i< end;i++){
+//		y=i-start;
+//		source[y]=file.rawCode.at(i);
+//	}
+//
+//	int puffVal= puff(dest, &destlen, source, &sourcelen);
+//	cout << puffVal <<endl;
+}
+void pack32(uint32_t val,uint8_t *dest)
+{
+        dest[0] = (val & 0xff000000) >> 24;
+        dest[1] = (val & 0x00ff0000) >> 16;
+        dest[2] = (val & 0x0000ff00) >>  8;
+        dest[3] = (val & 0x000000ff)      ;
+}
 
-	int puffVal= puff(dest, &destlen, source, &sourcelen);
-	cout << puffVal <<endl;
+
+uint32_t unpack32(uint8_t *src)
+{
+        uint32_t val;
+
+        val  = src[0] << 24;
+        val |= src[1] << 16;
+        val |= src[2] <<  8;
+        val |= src[3]      ;
+
+        return val;
+}
+
+void redColour(){
+	
+	ofstream red;
+	red.open("red.png", std::ios::binary);
+	string res,res2,res1,res3,temp1,temp2,temp3,full,temp,zeroes;
+	
+	stringstream zero;			// make 0 in unsign char for length if not long enough
+	zero << hex << file.rawCode.at(9);
+	zeroes=zero.str();
+	
+	for (int i=0;i<file.IHDRloc+13;i++){ // write header file
+		stringstream sc;
+
+		sc << hex << file.rawCode.at(i);
+		res1 = sc.str();
+		temp1=temp1+res1;
+	}
+	
+	for (int i=4;i>0;i--){ // write IDAT
+		stringstream s1;
+
+		s1 << hex << file.rawCode.at(file.IDATloc.at(1)-i);
+		res2 = s1.str();
+		temp2=temp2+res2;
+	}
+	
+	for (int i=0;i<file.Red.size();i++){	// write idat data red,0,0,alpha
+		
+		stringstream ss;
+		ss << hex <<file.Red.at(i);
+		temp =ss.str();
+		res=res+temp;
+		
+		stringstream s2;
+		s2 << hex <<file.rawCode.at(9); // for unsigned char 0
+		temp =s2.str();
+		res=res+temp;
+		
+		stringstream s3;
+		s3 << hex <<file.rawCode.at(9);	// must use unsigned char
+		temp =s3.str();
+		res=res+temp;
+		
+		stringstream s4;
+		s4 << hex <<file.alpha.at(i);
+		temp =s4.str();
+		res=res+temp;
+	}
+	
+	unsigned int temp4 = res.length();	// length of IDAT
+	unsigned char len;
+	string swe;			///////// check cehcke	adojcnpwlqverqi mcvhql /c.ekhl
+		
+	len = (unsigned char)temp4;
+	cout<< len;
+	
+	stringstream sw;
+	sw << hex<<len;
+	swe=sw.str();
+	
+	if (swe.length() == 3)
+		swe=zeroes+swe;
+	else if (swe.length() ==2)
+		swe=zeroes+zeroes+swe;
+	else if (swe.length() ==1)
+		swe=zeroes+zeroes+zeroes+swe;
+	
+	for (int i=-8;i<4;i++){ // write length, IEND,crc
+		stringstream se;
+
+		se << hex << file.rawCode.at(file.IENDloc+i);
+		res3 = se.str();
+		temp3=temp3+res3;
+	}
+	full=temp1+swe+temp2+res+temp3;
+	red<<hex<<full;
+	
+}
+
+void greenColour(){
+	
+
+}
+
+void blueColour(){
+	
 }
 
 //void IDATinfo(){
@@ -962,6 +1103,10 @@ int main()
 	findIEND();
 	IENDinfo();
 	IDATchunks();
+	redColour();
+	greenColour();
+	blueColour();
+	
 	
 	printIHDR();
 	printPHYS();
