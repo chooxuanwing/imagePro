@@ -903,7 +903,7 @@ uint32_t unpack32(uint8_t *src)
 void redColour(){
 	
 	ofstream red;
-	red.open("red.png", std::ios::binary);
+	red.open("brainbow_r .png", std::ios::binary);
 	string res,res2,res1,res3,temp1,temp2,temp3,full,temp,zeroes;
 	
 	stringstream zero;			// make 0 in unsign char for length if not long enough
@@ -954,9 +954,9 @@ void redColour(){
 	string swe;			///////// check cehcke	adojcnpwlqverqi mcvhql /c.ekhl
 		
 	len = (unsigned char)temp4;
-	cout<< len;
+//	cout<< len;
 	
-	stringstream sw;
+	stringstream sw;			// wrong emthod to add length
 	sw << hex<<len;
 	swe=sw.str();
 	
@@ -981,10 +981,160 @@ void redColour(){
 
 void greenColour(){
 	
+	ofstream red;
+	red.open("brainbow_g .png", std::ios::binary);
+	string res,res2,res1,res3,temp1,temp2,temp3,full,temp,zeroes;
+	
+	stringstream zero;			// make 0 in unsign char for length if not long enough
+	zero << hex << file.rawCode.at(9);
+	zeroes=zero.str();
+	
+	for (int i=0;i<file.IHDRloc+13;i++){ // write header file
+		stringstream sc;
+
+		sc << hex << file.rawCode.at(i);
+		res1 = sc.str();
+		temp1=temp1+res1;
+	}
+	
+	for (int i=4;i>0;i--){ // write IDAT
+		stringstream s1;
+
+		s1 << hex << file.rawCode.at(file.IDATloc.at(1)-i);
+		res2 = s1.str();
+		temp2=temp2+res2;
+	}
+	
+	for (int i=0;i<file.Green.size();i++){	// write idat data 0,green,0,alpha
+		
+		stringstream ss;
+		ss << hex <<file.Green.at(i);
+		temp =ss.str();
+		res=res+temp;
+		
+		stringstream s2;
+		s2 << hex <<file.rawCode.at(9); // for unsigned char 0
+		temp =s2.str();
+		res=res+temp;
+		
+		stringstream s3;
+		s3 << hex <<file.rawCode.at(9);	// must use unsigned char
+		temp =s3.str();
+		res=res+temp;
+		
+		stringstream s4;
+		s4 << hex <<file.alpha.at(i);
+		temp =s4.str();
+		res=res+temp;
+	}
+	
+	unsigned int temp4 = res.length();	// length of IDAT
+	unsigned char len;
+	string swe;			///////// check cehcke	adojcnpwlqverqi mcvhql /c.ekhl
+		
+	len = (unsigned char)temp4;
+//	cout<< len;
+	
+	stringstream sw;			// wrong emthod to add length
+	sw << hex<<len;
+	swe=sw.str();
+	
+	if (swe.length() == 3)
+		swe=zeroes+swe;
+	else if (swe.length() ==2)
+		swe=zeroes+zeroes+swe;
+	else if (swe.length() ==1)
+		swe=zeroes+zeroes+zeroes+swe;
+	
+	for (int i=-8;i<4;i++){ // write length, IEND,crc
+		stringstream se;
+
+		se << hex << file.rawCode.at(file.IENDloc+i);
+		res3 = se.str();
+		temp3=temp3+res3;
+	}
+	full=temp1+swe+temp2+res+temp3;
+	red<<hex<<full;
+	
 
 }
 
 void blueColour(){
+	
+	ofstream red;
+	red.open("brainbow_b .png", std::ios::binary);
+	string res,res2,res1,res3,temp1,temp2,temp3,full,temp,zeroes;
+	
+	stringstream zero;			// make 0 in unsign char for length if not long enough
+	zero << hex << file.rawCode.at(9);
+	zeroes=zero.str();
+	
+	for (int i=0;i<file.IHDRloc+13;i++){ // write header file
+		stringstream sc;
+
+		sc << hex << file.rawCode.at(i);
+		res1 = sc.str();
+		temp1=temp1+res1;
+	}
+	
+	for (int i=4;i>0;i--){ // write IDAT
+		stringstream s1;
+
+		s1 << hex << file.rawCode.at(file.IDATloc.at(1)-i);
+		res2 = s1.str();
+		temp2=temp2+res2;
+	}
+	
+	for (int i=0;i<file.Blue.size();i++){	// write idat data 0,0,blue,alpha
+		
+		stringstream ss;
+		ss << hex <<file.Blue.at(i);
+		temp =ss.str();
+		res=res+temp;
+		
+		stringstream s2;
+		s2 << hex <<file.rawCode.at(9); // for unsigned char 0
+		temp =s2.str();
+		res=res+temp;
+		
+		stringstream s3;
+		s3 << hex <<file.rawCode.at(9);	// must use unsigned char
+		temp =s3.str();
+		res=res+temp;
+		
+		stringstream s4;
+		s4 << hex <<file.alpha.at(i);
+		temp =s4.str();
+		res=res+temp;
+	}
+	
+	unsigned int temp4 = res.length();	// length of IDAT
+	unsigned char len;
+	string swe;			///////// check cehcke	adojcnpwlqverqi mcvhql /c.ekhl
+		
+	len = (unsigned char)temp4;
+//	cout<< len;
+	
+	stringstream sw;			// wrong emthod to add length
+	sw << hex<<len;
+	swe=sw.str();
+	
+	if (swe.length() == 3)
+		swe=zeroes+swe;
+	else if (swe.length() ==2)
+		swe=zeroes+zeroes+swe;
+	else if (swe.length() ==1)
+		swe=zeroes+zeroes+zeroes+swe;
+	
+	for (int i=-8;i<4;i++){ // write length, IEND,crc
+		stringstream se;
+
+		se << hex << file.rawCode.at(file.IENDloc+i);
+		res3 = se.str();
+		temp3=temp3+res3;
+	}
+	full=temp1+swe+temp2+res+temp3;
+	red<<hex<<full;
 	
 }
 
@@ -1088,8 +1238,8 @@ int main()
 //	unsigned char a[20000]={};
 	cout << "Image Processing Software\n\nSpecify the name of the PNG file that you would like to process.\n>";
 	
-//	cin >> fileName;
-	fileName="brainbow.png";
+	cin >> fileName;
+//	fileName="brainbow.png";
 	
 	setInitial();
 	openSortFile(fileName);
